@@ -1,3 +1,27 @@
+# TUB-RIP fork of E-RAFT
+
+This is a fork repository of [E-RAFT](https://github.com/uzh-rpg/E-RAFT).
+
+Please refer to the original version for any updates.
+
+
+## Shintaro note
+
+### Installation
+
+The installation is straightforward, confirmed with 
+
+- Python 3.9
+- venv
+- torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 
+
+Note: for this repository I removed numba dependency. (See commit)
+
+
+Below is the origina README.
+
+-----
+
 # E-RAFT: Dense Optical Flow from Event Cameras
 
 <p align="center">
