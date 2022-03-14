@@ -13,6 +13,9 @@ from skimage import io
 import cv2
 import imageio
 from torchvision.transforms import CenterCrop
+import imageio
+imageio.plugins.freeimage.download()
+
 
 class BaseVisualizer(object):
     def __init__(self, dataloader, save_path, additional_args=None):
