@@ -5,7 +5,8 @@ import weakref
 
 import cv2
 import h5py
-from numba import jit
+import hdf5plugin
+# from numba import jit
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -106,7 +107,6 @@ class EventSlicer:
         return window_start_ms, window_end_ms
 
     @staticmethod
-    @jit(nopython=True)
     def get_time_indices_offsets(
             time_array: np.ndarray,
             time_start_us: int,
@@ -198,7 +198,8 @@ class Sequence(Dataset):
         self.visualize_samples = visualize
         # Get Test Timestamp File
         test_timestamp_file = seq_path / 'test_forward_flow_timestamps.csv'
-        assert test_timestamp_file.is_file()
+        if not test_timestamp_file.is_file():
+            raise RuntimeError("No flow estimation")
         file = np.genfromtxt(
             test_timestamp_file,
             delimiter=','
@@ -230,7 +231,8 @@ class Sequence(Dataset):
         self.indices = image_indices[::2][1:-1]
 
         # Left events only
-        ev_dir_location = seq_path / 'events_left'
+        ev_dir_location = seq_path / 'events' / 'left'
+        # ev_dir_location = seq_path / 'events_left'   # This is original
         ev_data_file = ev_dir_location / 'events.h5'
         ev_rect_file = ev_dir_location / 'rectify_map.h5'
 
@@ -420,17 +422,27 @@ class DatasetProvider:
 
         test_sequences = list()
         for child in test_path.iterdir():
+            if not child.is_dir():
+                continue
             self.name_mapper_test.append(str(child).split("/")[-1])
             if type == 'standard':
-                test_sequences.append(Sequence(child, representation_type, 'test', delta_t_ms, num_bins,
-                                               transforms=[],
-                                               name_idx=len(self.name_mapper_test)-1,
-                                               visualize=visualize))
+                try:
+                    test_sequences.append(Sequence(child, representation_type, 'test', delta_t_ms, num_bins,
+                                                transforms=[],
+                                                name_idx=len(self.name_mapper_test)-1,
+                                                visualize=visualize))
+                except RuntimeError:
+                    print(f"WARNING: no optical flow estimation test for {child}")
+                    pass
             elif type == 'warm_start':
-                test_sequences.append(SequenceRecurrent(child, representation_type, 'test', delta_t_ms, num_bins,
-                                                        transforms=[], sequence_length=1,
-                                                        name_idx=len(self.name_mapper_test)-1,
-                                                        visualize=visualize))
+                try:
+                    test_sequences.append(SequenceRecurrent(child, representation_type, 'test', delta_t_ms, num_bins,
+                                                            transforms=[], sequence_length=1,
+                                                            name_idx=len(self.name_mapper_test)-1,
+                                                            visualize=visualize))
+                except RuntimeError:
+                    print(f"WARNING: no optical flow estimation test for {child}")
+                    pass
             else:
                 raise Exception('Please provide a valid subtype [standard/warm_start] in config file!')
 
